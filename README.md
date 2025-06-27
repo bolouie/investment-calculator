@@ -133,10 +133,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 This tool is for educational and informational purposes only. It does not constitute financial advice. Always consult with a qualified financial advisor before making investment decisions.
 
-## Support
-
-For support, email support@yourdomain.com or create an issue on GitHub.
-
 ---
 
 **Made with ❤️ for better investment decisions**
