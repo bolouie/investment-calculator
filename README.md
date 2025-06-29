@@ -29,7 +29,7 @@ Professional calculators for stock and ETF evaluation. Make informed investment 
 
 ### Prerequisites
 
-- Node.js 14 or higher
+- Node.js 24 or higher
 - npm or yarn
 
 ### Installation
