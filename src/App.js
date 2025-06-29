@@ -21,7 +21,10 @@ function App() {
     peRatio: '',
     industryPE: '',
     timeHorizon: '',
+    ticker: '',
   });
+
+  const [stockLoading, setStockLoading] = useState(false);
 
   // ETF Calculator State
   const [etfInputs, setEtfInputs] = useState({
@@ -32,7 +35,56 @@ function App() {
     dividendFreq: 'quarterly',
     benchmarkReturn: '',
     timeHorizon: '',
+    ticker: '',
   });
+
+  const [etfLoading, setEtfLoading] = useState(false);
+
+  // Fetch stock price from API
+  const fetchStockPrice = async (ticker, isETF = false) => {
+    if (!ticker.trim()) {
+      alert('Please enter a ticker symbol');
+      return;
+    }
+
+    const setLoading = isETF ? setEtfLoading : setStockLoading;
+    const setInputs = isETF ? setEtfInputs : setStockInputs;
+    const inputs = isETF ? etfInputs : stockInputs;
+
+    setLoading(true);
+
+    try {
+      // Using Financial Modeling Prep API (free tier: 250 calls/day)
+      const response = await fetch(
+        `https://financialmodelingprep.com/api/v3/quote/${ticker}?apikey=demo`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch stock price');
+      }
+
+      const data = await response.json();
+      
+      if (!data || data.length === 0 || !data[0].price) {
+        throw new Error(`No price data found for ${ticker}`);
+      }
+
+      const price = data[0].price;
+      
+      setInputs({
+        ...inputs,
+        currentPrice: price.toString(),
+        ticker: '',
+      });
+
+      alert(`Price for ${ticker}: $${price}`);
+    } catch (error) {
+      console.error('Error fetching stock price:', error);
+      alert(`Error fetching price for ${ticker}. Please check the ticker symbol and try again.`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const calculateStock = () => {
     const investment = parseFloat(stockInputs.investment) || 0;
@@ -183,6 +235,34 @@ function App() {
                   className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
                   placeholder='10000'
                 />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>
+                  Ticker Symbol (e.g., AAPL, SHOP.TO)
+                </label>
+                <div className='flex gap-2'>
+                  <input
+                    type='text'
+                    value={stockInputs.ticker}
+                    onChange={(e) =>
+                      setStockInputs({
+                        ...stockInputs,
+                        ticker: e.target.value.toUpperCase(),
+                      })
+                    }
+                    className='flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                    placeholder='AAPL'
+                  />
+                  <button
+                    type='button'
+                    onClick={() => fetchStockPrice(stockInputs.ticker, false)}
+                    disabled={stockLoading || !stockInputs.ticker.trim()}
+                    className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium'
+                  >
+                    {stockLoading ? 'Loading...' : 'Get Price'}
+                  </button>
+                </div>
               </div>
 
               <div className='grid grid-cols-2 gap-4'>
@@ -422,6 +502,34 @@ function App() {
                   className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500'
                   placeholder='10000'
                 />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>
+                  Ticker Symbol (e.g., VTI, XEQT.TO)
+                </label>
+                <div className='flex gap-2'>
+                  <input
+                    type='text'
+                    value={etfInputs.ticker}
+                    onChange={(e) =>
+                      setEtfInputs({
+                        ...etfInputs,
+                        ticker: e.target.value.toUpperCase(),
+                      })
+                    }
+                    className='flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500'
+                    placeholder='VTI'
+                  />
+                  <button
+                    type='button'
+                    onClick={() => fetchStockPrice(etfInputs.ticker, true)}
+                    disabled={etfLoading || !etfInputs.ticker.trim()}
+                    className='px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium'
+                  >
+                    {etfLoading ? 'Loading...' : 'Get Price'}
+                  </button>
+                </div>
               </div>
 
               <div className='grid grid-cols-2 gap-4'>
