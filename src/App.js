@@ -46,41 +46,72 @@ function App() {
       alert('Please enter a ticker symbol');
       return;
     }
-
+  
     const setLoading = isETF ? setEtfLoading : setStockLoading;
     const setInputs = isETF ? setEtfInputs : setStockInputs;
     const inputs = isETF ? etfInputs : stockInputs;
-
+  
     setLoading(true);
-
+  
     try {
-      // Using Financial Modeling Prep API (free tier: 250 calls/day)
-      const response = await fetch(
-        `https://financialmodelingprep.com/api/v3/quote/${ticker}?apikey=demo`
-      );
+      // Check if it's a Canadian ticker
+      const isCanadian = ticker.toUpperCase().endsWith('.TO');
       
+      if (isCanadian) {
+        // Use demo data for Canadian tickers (free tier limitation)
+        const canadianDemo = {
+          'XEQT.TO': { price: 35.48, name: 'iShares Core Equity ETF Portfolio' },
+          'UMAX.TO': { price: 13.56, name: 'Horizons US Large Cap Index ETF' },
+          'VFV.TO': { price: 115.23, name: 'Vanguard S&P 500 Index ETF' },
+          'SHOP.TO': { price: 85.40, name: 'Shopify Inc.' },
+          'CNR.TO': { price: 165.75, name: 'Canadian National Railway' }
+        };
+        
+        const stockData = canadianDemo[ticker.toUpperCase()];
+        if (stockData) {
+          setInputs({
+            ...inputs,
+            currentPrice: stockData.price.toString(),
+            ticker: ticker.toUpperCase()
+          });
+          alert(`✅ ${stockData.name}\n${ticker.toUpperCase()}: $${stockData.price}\n\n📊 Demo data (TSX limited on free tier)`);
+          return;
+        }
+      }
+      
+      // Use real API for US tickers
+      let formattedTicker = ticker.toUpperCase();
+      if (formattedTicker.endsWith('.TO')) {
+        formattedTicker = formattedTicker.replace('.TO', ':TSX');
+      }
+  
+      const response = await fetch(
+        `https://api.twelvedata.com/price?symbol=${formattedTicker}&apikey=${process.env.REACT_APP_TWELVE_DATA_API_KEY}`
+      );
+  
       if (!response.ok) {
         throw new Error('Failed to fetch stock price');
       }
-
+  
       const data = await response.json();
-      
-      if (!data || data.length === 0 || !data[0].price) {
-        throw new Error(`No price data found for ${ticker}`);
+  
+      if (data.price && !data.error) {
+        const price = parseFloat(data.price).toFixed(2);
+        
+        setInputs({
+          ...inputs,
+          currentPrice: price,
+          ticker: ticker.toUpperCase()
+        });
+  
+        alert(`✅ Price updated!\n${ticker.toUpperCase()}: $${price}\n\n📊 Live data from Twelve Data`);
+      } else {
+        throw new Error(data.message || 'No price data found');
       }
-
-      const price = data[0].price;
-      
-      setInputs({
-        ...inputs,
-        currentPrice: price.toString(),
-        ticker: '',
-      });
-
-      alert(`Price for ${ticker}: $${price}`);
+  
     } catch (error) {
       console.error('Error fetching stock price:', error);
-      alert(`Error fetching price for ${ticker}. Please check the ticker symbol and try again.`);
+      alert(`❌ Error fetching price for ${ticker}.\n\nWorking tickers:\n• US: VTI, VOO, AAPL, MSFT\n• Canadian: XEQT.TO, VFV.TO, SHOP.TO\n\n💡 Or enter price manually.`);
     } finally {
       setLoading(false);
     }
@@ -345,6 +376,9 @@ function App() {
                 <div>
                   <label className='block text-sm font-medium text-gray-700 mb-2'>
                     P/E Ratio
+                    <span className="text-xs text-blue-600 block mt-1">
+                    Current price ÷ earnings per share
+                    </span>
                   </label>
                   <input
                     type='number'
@@ -362,6 +396,9 @@ function App() {
                 <div>
                   <label className='block text-sm font-medium text-gray-700 mb-2'>
                     Industry Avg P/E
+                    <span className="text-xs text-blue-600 block mt-1">
+                    Typical ranges: Tech 30-40, Utilities 12-18, Banks 10-15, Energy 8-12
+                    </span>
                   </label>
                   <input
                     type='number'
@@ -606,6 +643,9 @@ function App() {
               <div>
                 <label className='block text-sm font-medium text-gray-700 mb-2'>
                   Expected Benchmark Return (%)
+                  <span className="text-xs text-blue-600 block mt-1">
+                  Typical ranges: Canadian Large Cap 6-8%, US Broad Market 8-10%, High-Yield/Covered Call 12-14%
+                  </span>
                 </label>
                 <input
                   type='number'
