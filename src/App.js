@@ -88,12 +88,12 @@ function App() {
       const response = await fetch(
         `https://api.twelvedata.com/price?symbol=${formattedTicker}&apikey=${process.env.REACT_APP_TWELVE_DATA_API_KEY}`
       );
-  
-      if (!response.ok) {
-        throw new Error('Failed to fetch stock price');
-      }
-  
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
       const data = await response.json();
+      console.log('Full response data:', data);
   
       if (data.price && !data.error) {
         const price = parseFloat(data.price).toFixed(2);
